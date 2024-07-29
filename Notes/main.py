@@ -26,8 +26,8 @@ def index():
     return 'Hello wolrd'
 
 @app.post('/notes',status_code=201 , tags=['Notes'])
-def create_notes(request:schemas.Note , db:Session=Depends(get_db),current_user:schemas.User=Depends( oauth2.get_current_user)):
-    new_note= models.Note(title=request.title,content=request.content,user_id=1)
+def create_notes( request:schemas.Note ,user:str=Depends(token.get_current_user_id), db:Session=Depends(get_db),current_user:schemas.User=Depends( oauth2.get_current_user)):
+    new_note= models.Note(title=request.title,content=request.content,user_id=user)
     db.add(new_note)
     db.commit()
     db.refresh(new_note)
@@ -40,10 +40,10 @@ def all_notes( db:Session=Depends(get_db),current_user:schemas.User=Depends( oau
 
 @app.get('/notes/{id}',status_code=200,response_model=schemas.ShowNote,tags=['Notes'])
 def single_note( id:int, db:Session=Depends(get_db),current_user:schemas.User=Depends( oauth2.get_current_user)):
-    note=db.query(models.Note).filter(models.Note.id==id).first()
-    if not note:
-        raise HTTPException(status_code=404,detail='Note not found')
-    return note
+    if note := db.query(models.Note).filter(models.Note.id == id).first():
+        return note
+    else:
+         raise HTTPException(status_code=404,detail='Note not found')
 
 
 @app.post('/register',response_model=schemas.ShowUser,tags=['User'])
